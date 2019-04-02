@@ -1,0 +1,142 @@
+/* *****************************************************************
+ *
+ * Download latest Blinker library here:
+ * https://github.com/blinker-iot/blinker-library/archive/master.zip
+ * 
+ * 基于Ablinker的物联网小作品
+ * 由于艺术生的思维逻辑混乱
+ * 以下可能引起不适
+ *
+ * 蓝牙版本  
+ * BLE Ver. 
+ * *****************************************************************/
+
+#define BLINKER_BLE
+
+#include <Blinker.h>
+
+// 新建组件对象
+BlinkerButton Button1("btn-abc");
+BlinkerNumber Number1("num-abc");
+BlinkerNumber Temp1("num-wd");        //指定到手机的温度方块
+BlinkerNumber Frs1("num-yl");         //指定到手机的压力方块
+BlinkerNumber Prox1("tex-po8");        //指定到手机的红外方块
+
+int counter = 0;
+
+//温度模块定义
+int Digital_Value = 0;                  //温度测量的电压值
+float temp_Value = 0;                   //设置一个叫temp_Value的值（温度值）浮点
+const int TempPin = 3;                  //  A3  接口         
+
+//压力模块定义
+const int fsrPin = 2;                   // A2 接口
+int frs_Value;                         //设置一个叫frs_Value的值（压力值）
+
+//热释电模块定义
+int proximitySensor = 7;                //7口红外
+int prox_Value;
+
+
+// 按下按键即会执行该函数
+void button1_callback(const String & state)
+{
+    BLINKER_LOG("get button state: ", state);
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+}
+
+void dataRead(const String & data)
+{
+    BLINKER_LOG("Blinker readString: ", data);
+    counter++;
+    Number1.print(counter);
+}
+
+void setup()
+{
+    Serial.begin(115200);
+    BLINKER_DEBUG.stream(Serial);
+    
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, HIGH);
+
+    pinMode(proximitySensor, INPUT);                //初始化红外IO口
+    analogReference(INTERNAL);                      //模拟输入电压设定（for温度传感器
+    
+    Blinker.begin(2, 3, 115200);                   //初始化蓝牙
+    Blinker.attachData(dataRead);
+
+    Button1.attach(button1_callback);
+
+}
+
+void loop()
+{
+    Blinker.run();
+///////////////////////////////////温度模块工作代码///////////////////////////////////////////
+    Digital_Value=analogRead(TempPin);                 //读取电压值（数字量）
+    temp_Value=(float)Digital_Value/1023*110.00;       //换算成摄氏温度
+
+        Temp1.print(temp_Value);
+            
+        Serial.print("Temperature for LM35 is: ");
+        Serial.println(temp_Value,2);                     //发送温度数据
+        delay(1000);                                       //一秒刷新一次
+//////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////压力模块工作代码///////////////////////////////////////////
+
+    frs_Value = analogRead(fsrPin);                          //  读取压力值
+    
+  //1.串口监视器  
+    Serial.print("Analog reading = ");
+    Serial.print(frs_Value);
+    if (frs_Value < 10) {
+    Serial.println(" - No pressure");
+  } else if (frs_Value < 200) {
+    Serial.println(" - Light touch");
+  } else if (frs_Value < 500) {
+    Serial.println(" - Light squeeze");
+  } else if (frs_Value < 800) {
+    Serial.println(" - Medium squeeze");
+  } else {
+    Serial.println(" - Big squeeze");
+  }
+  delay(1000);   
+  
+ //2.blinker工作
+ if (frs_Value < 200) {
+    Frs1.text("Easy!");
+    Frs1.print(frs_Value);
+    Serial.println("Take it Easy!");
+
+  } else {
+    Frs1.text("Be Careful!");
+    Frs1.print(frs_Value);
+    Serial.println("Be Careful!");
+    Blinker.vibrate(800);
+    delay(1000);
+    Blinker.delay(1000);
+  }
+ 
+  //////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////热释电模块工作代码//////////////////////////////////////////
+  int value = digitalRead(proximitySensor);
+  if (value == 0)
+  {
+    Serial.println("No one here");
+    Prox1.text("No one here");
+    Prox1.print();
+   
+  }
+  else if (value == 1)
+  {
+    Serial.println("Somebody here!!");
+    Prox1.text("Somebody here!!");
+    Prox1.print();
+  }
+  delay(1000);
+  //////////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////整合功能///////////////////////////////////////////////
+  
+
+}
