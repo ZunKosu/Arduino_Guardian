@@ -1,0 +1,123 @@
+/* *****************************************************************
+ *
+ * Download latest Blinker library here:
+ * https://github.com/blinker-iot/blinker-library/archive/master.zip
+ * 
+ * 
+ * Blinker is a cross-hardware, cross-platform solution for the IoT. 
+ * It provides APP, device and server support, 
+ * and uses public cloud services for data transmission and storage.
+ * It can be used in smart home, data monitoring and other fields 
+ * to help users build Internet of Things projects better and faster.
+ * 
+ * Make sure installed 2.5.0 or later ESP8266/Arduino package,
+ * if use ESP8266 with Blinker.
+ * https://github.com/esp8266/Arduino/releases
+ * 
+ * Docs: https://doc.blinker.app/
+ *       https://github.com/blinker-iot/blinker-doc/wiki
+ * 
+ * *****************************************************************
+ * 
+ * Blinker 库下载地址:
+ * https://github.com/blinker-iot/blinker-library/archive/master.zip
+ * 
+ * Blinker 是一套跨硬件、跨平台的物联网解决方案，提供APP端、设备端、
+ * 服务器端支持，使用公有云服务进行数据传输存储。可用于智能家居、
+ * 数据监测等领域，可以帮助用户更好更快地搭建物联网项目。
+ * 
+ * 如果使用 ESP8266 接入 Blinker,
+ * 请确保安装了 2.5.0 或更新的 ESP8266/Arduino 支持包。
+ * https://github.com/esp8266/Arduino/releases
+ * 
+ * 文档: https://doc.blinker.app/
+ *       https://github.com/blinker-iot/blinker-doc/wiki
+ * 
+ * 
+ * Wifi版本
+ * Wifi Ver
+ * Wifi版本存在严重漏洞！！！
+ * 
+ * 
+ * *****************************************************************/
+
+#define BLINKER_WIFI
+
+#include <Blinker.h>
+
+char auth[] = "2c2a1534511d";
+char ssid[] = "zunk";
+char pswd[] = "xsdxsd123";
+
+// 新建组件对象
+BlinkerButton Button1("btn-abc");
+BlinkerNumber Number1("num-abc");
+BlinkerNumber Frs1("num-yl");         //指定到手机的压力方块
+BlinkerButton Tex1("tex-tix");
+
+int counter = 0;
+
+
+const int frsPin = 0;                 //frsPin的值为0，意为指定A0口为压力IO
+int frs_Value;                         //设置一个叫frs_Value的值（压力值）
+
+// 按下按键即会执行该函数
+void button1_callback(const String & state)
+{
+    BLINKER_LOG("get button state: ", state);
+    digitalWrite(D13, !digitalRead(D13));
+}
+
+// 如果未绑定的组件被触发，则会执行其中内容
+void dataRead(const String & data)
+{
+    BLINKER_LOG("Blinker readString: ", data);
+    counter++;
+    Number1.print(counter);
+}
+
+void heartbeat()                               //心跳包附带测量值
+{
+    Frs1.print(frs_Value);
+}
+
+void setup()
+{
+    // 初始化串口
+    Serial.begin(115200);
+    BLINKER_DEBUG.stream(Serial);
+    
+    // 初始化有LED的IO
+    pinMode(D13, OUTPUT);
+    digitalWrite(D13, HIGH);
+    // 初始化blinker
+    Blinker.begin(auth, ssid, pswd);
+    Blinker.attachData(dataRead);
+    Blinker.attachHeartbeat(heartbeat);
+
+    Button1.attach(button1_callback);
+}
+
+void loop() {
+    Blinker.run();
+    frs_Value = analogRead(frsPin);                   //读取压力值
+    Serial.print("Analog reading = ");
+    Serial.println(frs_Value);
+ if (frs_Value < 20) {
+    Frs1.text("Easy!");
+    Frs1.print(frs_Value);
+    Serial.println("Take it Easy!");
+
+  } else {
+    Frs1.text("Be Careful!");
+    Frs1.print(frs_Value);
+    Serial.println("Be Careful!");
+    Blinker.wechat("Be Careful!Your child is still in the car!");
+    delay(1000);
+    Blinker.delay(3000);
+  }
+    
+    delay(10000);
+    
+    Blinker.delay(3000);
+}
