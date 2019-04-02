@@ -73,7 +73,9 @@ void setup()
 void loop()
 {
     Blinker.run();
-///////////////////////////////////温度模块工作代码///////////////////////////////////////////
+    
+//温度模块工作代码
+
     Digital_Value=analogRead(TempPin);                 //读取电压值（数字量）
     temp_Value=(float)Digital_Value/1023*110.00;       //换算成摄氏温度
 
@@ -82,8 +84,10 @@ void loop()
         Serial.print("Temperature for LM35 is: ");
         Serial.println(temp_Value,2);                     //发送温度数据
         delay(1000);                                       //一秒刷新一次
-//////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////压力模块工作代码///////////////////////////////////////////
+
+        Blinker.delay(1000);
+        
+//压力模块工作代码
 
     frs_Value = analogRead(fsrPin);                          //  读取压力值
     
@@ -114,17 +118,16 @@ void loop()
     Frs1.print(frs_Value);
     Serial.println("Be Careful!");
     Blinker.vibrate(800);
-    delay(1000);
-    Blinker.delay(1000);
   }
- 
-  //////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////热释电模块工作代码//////////////////////////////////////////
+
+    Blinker.delay(1000);
+//热释电模块工作代码
+
   int value = digitalRead(proximitySensor);
   if (value == 0)
   {
     Serial.println("No one here");
-    Prox1.text("No one here");
+    Prox1.text("No one");
     Prox1.print();
    
   }
@@ -135,8 +138,31 @@ void loop()
     Prox1.print();
   }
   delay(1000);
-  //////////////////////////////////////////////////////////////////////////////////////////////
-  ///////////////////////////////////////整合功能///////////////////////////////////////////////
   
+  Blinker.delay(1000);
+//All in 整合功能
+
+  if (value == 1)
+  {
+    if (temp_Value > 30)
+    {
+      Serial.println("BeCareful");
+      Prox2.text("Not Safe");
+      Prox2.print();
+      Blinker.vibrate(800);
+      delay(500);
+    }
+    else
+    {
+      delay(100);
+    }
+  }
+  else 
+  {
+    Serial.println("Very Safe");
+    Prox2.text("Safe");
+    Prox2.print();
+  }
+    Blinker.delay(1000);
 
 }
