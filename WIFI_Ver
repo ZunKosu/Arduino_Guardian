@@ -1,123 +1,138 @@
-/* *****************************************************************
- *
- * Download latest Blinker library here:
- * https://github.com/blinker-iot/blinker-library/archive/master.zip
- * 
- * 
- * Blinker is a cross-hardware, cross-platform solution for the IoT. 
- * It provides APP, device and server support, 
- * and uses public cloud services for data transmission and storage.
- * It can be used in smart home, data monitoring and other fields 
- * to help users build Internet of Things projects better and faster.
- * 
- * Make sure installed 2.5.0 or later ESP8266/Arduino package,
- * if use ESP8266 with Blinker.
- * https://github.com/esp8266/Arduino/releases
- * 
- * Docs: https://doc.blinker.app/
- *       https://github.com/blinker-iot/blinker-doc/wiki
- * 
- * *****************************************************************
- * 
- * Blinker 库下载地址:
- * https://github.com/blinker-iot/blinker-library/archive/master.zip
- * 
- * Blinker 是一套跨硬件、跨平台的物联网解决方案，提供APP端、设备端、
- * 服务器端支持，使用公有云服务进行数据传输存储。可用于智能家居、
- * 数据监测等领域，可以帮助用户更好更快地搭建物联网项目。
- * 
- * 如果使用 ESP8266 接入 Blinker,
- * 请确保安装了 2.5.0 或更新的 ESP8266/Arduino 支持包。
- * https://github.com/esp8266/Arduino/releases
- * 
- * 文档: https://doc.blinker.app/
- *       https://github.com/blinker-iot/blinker-doc/wiki
- * 
- * 
- * Wifi版本
- * Wifi Ver
- * Wifi版本存在严重漏洞！！！
- * 
- * 
- * *****************************************************************/
+//翻到一个DHT11，看来能用wifiduino来做了
+
+
 
 #define BLINKER_WIFI
-
-#include <Blinker.h>
-
 char auth[] = "2c2a1534511d";
 char ssid[] = "zunk";
 char pswd[] = "xsdxsd123";
 
-// 新建组件对象
-BlinkerButton Button1("btn-abc");
-BlinkerNumber Number1("num-abc");
-BlinkerNumber Frs1("num-yl");         //指定到手机的压力方块
-BlinkerButton Tex1("tex-tix");
+#include <dht11.h>
+#include <Blinker.h>
 
-int counter = 0;
+dht11 DHT11;
 
+// 设置 DHT 引脚 为 Pin 12
+#define DHT11PIN 12
 
-const int frsPin = 0;                 //frsPin的值为0，意为指定A0口为压力IO
-int frs_Value;                         //设置一个叫frs_Value的值（压力值）
+BlinkerNumber Frs1("num-yl");         //指定到压力方块
+BlinkerNumber Wrs1("num-49x");         //指定到湿度方块
+BlinkerNumber Prs1("num-wd");
+BlinkerNumber Prox1("tex-po8");        //指定到手机的红外方块
+BlinkerNumber Prox2("tex-ur2");        //指定到手机的整合方块
 
-// 按下按键即会执行该函数
-void button1_callback(const String & state)
-{
-    BLINKER_LOG("get button state: ", state);
-    digitalWrite(D13, !digitalRead(D13));
-}
-
-// 如果未绑定的组件被触发，则会执行其中内容
-void dataRead(const String & data)
-{
-    BLINKER_LOG("Blinker readString: ", data);
-    counter++;
-    Number1.print(counter);
-}
+int Wrs_Value;
+int Prs_Value;
+int proximitySensor = 13;                //13口红外
+int prox_Value;
 
 void heartbeat()                               //心跳包附带测量值
 {
-    Frs1.print(frs_Value);
+
 }
 
-void setup()
-{
-    // 初始化串口
-    Serial.begin(115200);
-    BLINKER_DEBUG.stream(Serial);
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("DHT11 TEST PROGRAM");
+  Serial.print("LIBRARY");
+  // 输出 DHT 库的版本号
+  Serial.println(DHT11LIB_VERSION);
+  Serial.println();
+
+   BLINKER_DEBUG.stream(Serial);
     
-    // 初始化有LED的IO
-    pinMode(D13, OUTPUT);
-    digitalWrite(D13, HIGH);
     // 初始化blinker
     Blinker.begin(auth, ssid, pswd);
-    Blinker.attachData(dataRead);
     Blinker.attachHeartbeat(heartbeat);
 
-    Button1.attach(button1_callback);
 }
 
-void loop() {
-    Blinker.run();
-    frs_Value = analogRead(frsPin);                   //读取压力值
-    Serial.print("Analog reading = ");
-    Serial.println(frs_Value);
- if (frs_Value < 20) {
-    Frs1.text("Easy!");
-    Frs1.print(frs_Value);
-    Serial.println("Take it Easy!");
 
-  } else {
-    Frs1.text("Be Careful!");
-    Frs1.print(frs_Value);
-    Serial.println("Be Careful!");
-    Blinker.wechat("Be Careful!Your child is still in the car!");
-    delay(1000);
-    Blinker.delay(3000);
+void loop() {
+  Blinker.run();
+  Serial.println("\n");
+
+  int chk = DHT11.read(DHT11PIN);
+
+  // 测试 DHT 是否正确连接
+  Serial.print("Read sensor: ");
+  switch (chk)
+  {
+    case DHTLIB_OK: 
+    Serial.println("OK"); 
+    break;
+    case DHTLIB_ERROR_CHECKSUM: 
+    Serial.println("Checksum error"); 
+    break;
+    case DHTLIB_ERROR_TIMEOUT: 
+    Serial.println("Time out error"); 
+    break;
+    default: 
+    Serial.println("Unknown error"); 
+    break;
   }
-    
-    delay(10000);
-    
-    Blinker.delay(3000);
+
+  // 获取测量数据
+  Serial.print("Humidity (%): ");
+  Serial.println((float)DHT11.humidity, 2);
+  Wrs_Value = (float)DHT11.humidity, 2;
+  Wrs1.print(Wrs_Value);
+  
+  Blinker.delay(2000);
+  
+  Serial.print("Temperature °C): ");
+  Serial.println((float)DHT11.temperature, 2);
+  Prs_Value = (float)DHT11.temperature, 2;
+  Prs1.print(Prs_Value);
+  
+  Blinker.delay(2000);
+  delay(1000);
+  
+  //热释电模块工作代码
+
+  int value = digitalRead(proximitySensor);
+  if (value == 0)
+  {
+    Serial.println("No one here");
+    Prox1.text("No one");
+    Prox1.print();
+   
+  }
+  else if (value == 1)
+  {
+    Serial.println("Somebody here!!");
+    Prox1.text("Somebody here!!");
+    Prox1.print();
+  }
+  delay(1000);
+  
+  Blinker.delay(1000);
+  //All in 整合功能
+
+  if (value == 1)
+  {
+    if (Prs_Value > 10)
+    {
+      Serial.println("BeCareful");
+      Prox2.text("Not Safe");
+      Prox2.color("#FF0000");
+      Prox2.print();
+      Blinker.vibrate(800);
+      Blinker.wechat("Be Careful!Your child is still in the car!");
+      delay(500);
+    }
+    else
+    {
+      delay(100);
+    }
+  }
+  else 
+  {
+    Serial.println("Very Safe");
+    Prox2.text("Safe");
+    Prox2.color("#008000");
+    Prox2.print();
+  }
+    Blinker.delay(5000);
 }
