@@ -3,9 +3,9 @@
 
 
 #define BLINKER_WIFI
-char auth[] = "2c2a1534511d";
+char auth[] = "************";
 char ssid[] = "zunk";
-char pswd[] = "xsdxsd123";
+char pswd[] = "************";
 
 #include <dht11.h>
 #include <Blinker.h>
